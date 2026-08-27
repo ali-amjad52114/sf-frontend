@@ -2,6 +2,7 @@ import "server-only";
 
 import { ApiError, apiFetch, apiJson } from "@/lib/apiClient";
 import type {
+  AddressErrors,
   Contact,
   ContactInput,
   ContactPage,
@@ -132,10 +133,37 @@ export function toFieldErrors(
 
   const fieldErrors: Partial<Record<keyof ContactInput, string>> = {};
   for (const issue of detail) {
+    if (issue.loc.includes("addresses")) continue;
     const field = issue.loc?.[issue.loc.length - 1];
     if (typeof field === "string" && field !== "body") {
       fieldErrors[field as keyof ContactInput] ??= issue.msg;
     }
   }
   return fieldErrors;
+}
+
+/**
+ * FastAPI nests address validation locations as
+ * `["body", "addresses", <row>, <field>]`. Preserve the row index so the
+ * form can place an error next to the exact dynamic input.
+ */
+export function toAddressFieldErrors(error: ApiError): AddressErrors {
+  const detail = error.json<{ detail?: ValidationIssue[] }>()?.detail;
+  if (!Array.isArray(detail)) return {};
+
+  const addressErrors: AddressErrors = {};
+  for (const issue of detail) {
+    const addressIndex = issue.loc.indexOf("addresses");
+    const index = issue.loc[addressIndex + 1];
+    const field = issue.loc[addressIndex + 2];
+    if (
+      addressIndex >= 0 &&
+      typeof index === "number" &&
+      typeof field === "string"
+    ) {
+      const row = (addressErrors[index] ??= {});
+      row[field as keyof typeof row] ??= issue.msg;
+    }
+  }
+  return addressErrors;
 }

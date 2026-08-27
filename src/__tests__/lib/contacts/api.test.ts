@@ -9,6 +9,7 @@ import {
   getContact,
   getHealth,
   listContacts,
+  toAddressFieldErrors,
   replaceContact,
   toFieldErrors,
 } from "@/lib/contacts/api";
@@ -31,6 +32,7 @@ const INPUT: ContactInput = {
   postal_code: null,
   country: null,
   notes: null,
+  addresses: [],
   photo: null,
 };
 
@@ -199,5 +201,24 @@ describe("error translation", () => {
 
   it("returns nothing for a non-validation body", () => {
     expect(toFieldErrors(new ApiError(500, "boom"))).toEqual({});
+  });
+
+  it("maps nested addresses validation onto a row and field", () => {
+    const error = new ApiError(
+      422,
+      JSON.stringify({
+        detail: [
+          {
+            loc: ["body", "addresses", 1, "address"],
+            msg: "String should have at least 1 character",
+          },
+        ],
+      }),
+    );
+
+    expect(toAddressFieldErrors(error)).toEqual({
+      1: { address: "String should have at least 1 character" },
+    });
+    expect(toFieldErrors(error)).toEqual({});
   });
 });

@@ -129,6 +129,34 @@ e2e/                      Playwright specs (run against the real API)
   sanitised by `src/lib/contacts/query.ts`. Sorting is validated against the
   API's allow-list, so a hand-edited URL can never produce a 422.
 
+### Multi-address API contract
+
+The address UI sends the planned `addresses` array on both create and full
+replacement. This frontend assumes each entry has these exact snake_case API
+field names:
+
+```json
+{
+  "type": "Home",
+  "address": "1 Market St, Suite 400",
+  "city": "San Francisco",
+  "state": "CA",
+  "postal_code": "94105",
+  "country": "USA"
+}
+```
+
+`type` is the enum `Home`, `Work`, or `Other`; `address` is the street
+line and all location fields are nullable. Completely blank rows are omitted. The
+frontend deliberately retains the former top-level `address`, `city`, `state`,
+`postal_code`, and `country` fields. When a user saves one or more addresses,
+the first row is mirrored into those legacy fields, letting older API versions
+and existing contacts retain a primary postal address during the migration.
+Responses that omit `addresses` are treated as a single legacy **Home** entry
+in the edit UI. If the backend adopts different object keys (for example
+`address_type` or `street`), update `ContactAddress` and the array-form parser
+in `src/lib/contacts/schema.ts` together.
+
 ### Contact photos
 
 The photo picker sends the selected JPG, PNG, or WebP as a small `data:image/...`

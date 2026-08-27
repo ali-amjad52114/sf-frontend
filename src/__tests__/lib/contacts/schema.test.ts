@@ -2,6 +2,7 @@ import {
   CONTACT_INPUT_FIELD_NAMES,
   contactInputSchema,
   formDataToValues,
+  zodAddressFieldErrors,
   zodFieldErrors,
 } from "@/lib/contacts/schema";
 
@@ -69,6 +70,54 @@ describe("contactInputSchema", () => {
     });
   });
 
+  it("normalizes every address in the planned addresses array", () => {
+    const parsed = contactInputSchema.parse({
+      ...values(),
+      addresses: [
+        {
+          type: "Work",
+          address: "  1 Market St  ",
+          city: " San Francisco ",
+          state: "CA",
+          postal_code: "94105",
+          country: " ",
+        },
+      ],
+    });
+
+    expect(parsed.addresses).toEqual([
+      {
+        type: "Work",
+        address: "1 Market St",
+        city: "San Francisco",
+        state: "CA",
+        postal_code: "94105",
+        country: null,
+      },
+    ]);
+  });
+
+  it("reports address validation against the row and field", () => {
+    const result = contactInputSchema.safeParse({
+      ...values(),
+      addresses: [
+        {
+          type: "Home",
+          address: "a".repeat(301),
+          city: "",
+          state: "",
+          postal_code: "",
+          country: "",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    expect(zodAddressFieldErrors(result.error!)).toEqual({
+      0: { address: "Street address must be 300 characters or fewer" },
+    });
+  });
+
   it("accepts base64 image data URIs and rejects other sources", () => {
     expect(
       contactInputSchema.parse(
@@ -97,14 +146,25 @@ describe("formDataToValues", () => {
     const formData = new FormData();
     formData.set("first_name", "Grace");
     formData.set("email", "grace@example.com");
+    formData.set("addresses[0][type]", "Work");
+    formData.set("addresses[0][address]", "1 Main St");
+    formData.set("addresses[0][city]", "London");
     formData.set("ignored", "nope");
 
     const extracted = formDataToValues(formData);
 
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
+    expect(extracted.addresses).toEqual([
+      { type: "Work", address: "1 Main St", city: "London" },
+    ]);
+    // The first dynamic address keeps legacy API consumers working as well.
+    expect(extracted.address).toBe("1 Main St");
     expect(Object.keys(extracted).sort()).toEqual(
-      CONTACT_INPUT_FIELD_NAMES.slice().sort(),
+      [
+        ...CONTACT_INPUT_FIELD_NAMES,
+        "addresses",
+      ].sort(),
     );
   });
 });

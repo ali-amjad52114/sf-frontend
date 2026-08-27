@@ -7,7 +7,13 @@ import ContactAvatar from "@/components/contacts/ContactAvatar";
 import DeleteContactButton from "@/components/contacts/DeleteContactButton";
 import { buttonClasses } from "@/components/ui/Button";
 import { getContact } from "@/lib/contacts/api";
-import { addressLine, formatTimestamp, jobLine } from "@/lib/contacts/format";
+import {
+  addressLine,
+  addressLineFor,
+  contactAddresses,
+  formatTimestamp,
+  jobLine,
+} from "@/lib/contacts/format";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -44,6 +50,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
 
   const subtitle = jobLine(contact);
   const address = addressLine(contact);
+  const addresses = contactAddresses(contact);
+  const hasAddressArray = contact.addresses !== undefined;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -102,7 +110,22 @@ export default async function ContactDetailPage({ params }: PageProps) {
         </Row>
         <Row label="Company">{contact.company}</Row>
         <Row label="Job title">{contact.job_title}</Row>
-        <Row label="Address">{address}</Row>
+        <Row label={hasAddressArray && addresses.length > 1 ? "Addresses" : "Address"}>
+          {hasAddressArray && addresses.length ? (
+            <div className="space-y-3">
+              {addresses.map((item, index) => (
+                <div key={`${item.type}-${index}`}>
+                  <div className="mb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {item.type}
+                  </div>
+                  <div>{addressLineFor(item)}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            hasAddressArray ? null : address
+          )}
+        </Row>
         <Row label="Notes">
           {contact.notes ? (
             <span className="whitespace-pre-wrap">{contact.notes}</span>

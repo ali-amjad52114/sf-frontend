@@ -52,12 +52,110 @@ describe("ContactForm", () => {
   });
 
   it("prefills from an existing contact", () => {
-    renderForm(jest.fn(), makeContact());
+    renderForm(jest.fn(), makeContact({ addresses: undefined }));
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
     // Nulls become empty inputs rather than the string "null".
     expect(screen.getByLabelText(/street address/i)).toHaveValue("");
+  });
+
+  it("adds, labels, and removes dynamic address rows", async () => {
+    const user = userEvent.setup();
+    renderForm(jest.fn());
+
+    await user.click(screen.getByRole("button", { name: /add address/i }));
+
+    const types = screen.getAllByLabelText("Address type");
+    expect(types).toHaveLength(1);
+    expect(types[0]).toHaveValue("Home");
+    await user.selectOptions(types[0], "Work");
+    expect(types[0]).toHaveValue("Work");
+
+    await user.click(screen.getByRole("button", { name: /add address/i }));
+    expect(screen.getAllByLabelText("Address type")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Remove address 1" }));
+    expect(screen.getAllByLabelText("Address type")).toHaveLength(1);
+  });
+
+  it("submits addresses as indexed array fields", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    const user = userEvent.setup();
+    renderForm(action);
+
+    await user.click(screen.getByRole("button", { name: /add address/i }));
+    await user.selectOptions(screen.getByLabelText("Address type"), "Other");
+    await user.type(screen.getByLabelText(/street address/i), "PO Box 9");
+    await user.click(screen.getByRole("button", { name: /create contact/i }));
+
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    const formData = action.mock.calls[0][1];
+    expect(formData.get("addresses[0][type]")).toBe("Other");
+    expect(formData.get("addresses[0][address]")).toBe("PO Box 9");
+  });
+
+  it("restores address rows and their field errors after a failed submission", async () => {
+    const action = jest.fn(
+      async (): Promise<FormState> => ({
+        status: "error",
+        message: "Please fix the highlighted fields.",
+        values: {
+          addresses: [
+            {
+              type: "Work",
+              address: "",
+              city: "London",
+              state: "",
+              postal_code: "",
+              country: "UK",
+            },
+          ],
+        },
+        addressErrors: { 0: { address: "Street address is too short." } },
+      }),
+    );
+    const user = userEvent.setup();
+    renderForm(action);
+
+    await user.click(screen.getByRole("button", { name: /create contact/i }));
+
+    expect(await screen.findByLabelText("Address type")).toHaveValue("Work");
+    expect(screen.getByLabelText(/street address/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByText("Street address is too short.")).toBeVisible();
+  });
+
+  it("keeps a failed row's errors with that row after removing an earlier address", async () => {
+    const action = jest.fn(
+      async (): Promise<FormState> => ({
+        status: "error",
+        values: {
+          addresses: [
+            { type: "Home", address: "1 First St" },
+            { type: "Work", address: "2 Second St" },
+          ],
+        },
+        addressErrors: { 1: { address: "Second address is invalid." } },
+      }),
+    );
+    const user = userEvent.setup();
+    renderForm(action);
+
+    await user.click(screen.getByRole("button", { name: /create contact/i }));
+
+    expect(await screen.findByText("Second address is invalid.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Remove address 1" }));
+
+    expect(screen.getByText("Second address is invalid.")).toBeVisible();
+    expect(screen.getByLabelText(/street address/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
   });
 
   it("previews and submits an existing photo without requiring a replacement", async () => {
