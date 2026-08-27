@@ -20,6 +20,10 @@ export default function ContactQuickActions({
   const statusId = useId();
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const callablePhone = phone?.trim() || null;
+  const emailHref = `mailto:${encodeURIComponent(email)}`;
+  const callHref = callablePhone
+    ? `tel:${encodeURIComponent(callablePhone)}`
+    : null;
 
   async function copyEmail() {
     try {
@@ -40,12 +44,12 @@ export default function ContactQuickActions({
 
   return (
     <section aria-label="Quick actions" className="flex flex-wrap items-center gap-2">
-      <a href={`mailto:${email}`} className={buttonClasses("secondary", "sm")}>
+      <a href={emailHref} className={buttonClasses("secondary", "sm")}>
         <Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
         Email
       </a>
-      {callablePhone ? (
-        <a href={`tel:${callablePhone}`} className={buttonClasses("secondary", "sm")}>
+      {callHref ? (
+        <a href={callHref} className={buttonClasses("secondary", "sm")}>
           <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           Call
         </a>

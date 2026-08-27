@@ -26,11 +26,29 @@ describe("ContactQuickActions", () => {
 
     expect(screen.getByRole("link", { name: "Email" })).toHaveAttribute(
       "href",
-      "mailto:ada@example.com",
+      "mailto:ada%40example.com",
     );
     expect(screen.getByRole("link", { name: "Call" })).toHaveAttribute(
       "href",
-      "tel:+1-415-555-0101",
+      "tel:%2B1-415-555-0101",
+    );
+  });
+
+  it("encodes URI-significant characters in action targets", () => {
+    render(
+      <ContactQuickActions
+        email="ada#team@example.com"
+        phone="+1 415 #7?"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Email" })).toHaveAttribute(
+      "href",
+      "mailto:ada%23team%40example.com",
+    );
+    expect(screen.getByRole("link", { name: "Call" })).toHaveAttribute(
+      "href",
+      "tel:%2B1%20415%20%237%3F",
     );
   });
 
