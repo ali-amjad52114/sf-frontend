@@ -28,6 +28,40 @@ function requiredText(max: number, label: string) {
     .max(max, `${label} must be ${max} characters or fewer`);
 }
 
+/**
+ * Keep the payload below Next's default 1 MB server-action body limit once a
+ * selected image is base64 encoded. Hosted URLs are deliberately allowed too,
+ * so existing API records remain editable.
+ */
+export const MAX_PHOTO_FILE_SIZE = 500 * 1024;
+export const MAX_PHOTO_DATA_URL_LENGTH = 700_000;
+
+function isSupportedPhotoSource(value: string) {
+  if (value.startsWith("data:image/")) return value.includes(";base64,");
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+const photoUrl = z
+  .string()
+  .trim()
+  .max(
+    MAX_PHOTO_DATA_URL_LENGTH,
+    "Photo must be 500 KB or smaller before it is uploaded",
+  )
+  .refine(
+    (value) => !value || isSupportedPhotoSource(value),
+    "Choose an image file or provide an image URL",
+  )
+  .transform((value) => value || null)
+  .nullable()
+  .default(null);
+
 export const contactInputSchema = z.object({
   first_name: requiredText(100, "First name"),
   last_name: requiredText(100, "Last name"),
@@ -52,6 +86,7 @@ export const contactInputSchema = z.object({
     .transform((value) => value || null)
     .nullable()
     .default(null),
+  photo_url: photoUrl,
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 export type ContactFormValues = z.input<typeof contactInputSchema>;
@@ -214,14 +249,20 @@ export const CONTACT_FIELDS: ContactFieldSpec[] = CONTACT_FIELD_GROUPS.flatMap(
   (group) => group.fields,
 );
 
+/** All wire fields, including the custom file picker rather than a generic Field. */
+export const CONTACT_INPUT_FIELD_NAMES = [
+  ...CONTACT_FIELDS.map((field) => field.name),
+  "photo_url",
+] as const satisfies readonly (keyof ContactInput)[];
+
 /** Pull the contact fields out of a submitted form, as raw strings. */
 export function formDataToValues(
   formData: FormData,
 ): Record<keyof ContactInput, string> {
   return Object.fromEntries(
-    CONTACT_FIELDS.map((field) => [
-      field.name,
-      String(formData.get(field.name) ?? ""),
+    CONTACT_INPUT_FIELD_NAMES.map((name) => [
+      name,
+      String(formData.get(name) ?? ""),
     ]),
   ) as Record<keyof ContactInput, string>;
 }

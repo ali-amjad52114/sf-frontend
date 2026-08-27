@@ -1,0 +1,34 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import ContactAvatar from "@/components/contacts/ContactAvatar";
+
+describe("ContactAvatar", () => {
+  const contact = {
+    first_name: "Ada",
+    last_name: "Lovelace",
+    email: "ada@example.com",
+    photo_url: "https://images.example.test/ada.png",
+  };
+
+  it("shows the persisted photo in a circular crop", () => {
+    const { container } = render(<ContactAvatar contact={contact} />);
+    const image = container.querySelector("img");
+
+    expect(image).toHaveAttribute("src", contact.photo_url);
+    expect(image).toHaveClass("rounded-full", "object-cover");
+  });
+
+  it("falls back to initials when the photo cannot load", () => {
+    const { container } = render(<ContactAvatar contact={contact} />);
+
+    fireEvent.error(container.querySelector("img")!);
+
+    expect(screen.getByText("AL")).toBeInTheDocument();
+    expect(container.querySelector("img")).not.toBeInTheDocument();
+  });
+
+  it("uses initials when a contact has no photo", () => {
+    render(<ContactAvatar contact={{ ...contact, photo_url: null }} />);
+
+    expect(screen.getByText("AL")).toBeInTheDocument();
+  });
+});

@@ -129,6 +129,16 @@ e2e/                      Playwright specs (run against the real API)
   sanitised by `src/lib/contacts/query.ts`. Sorting is validated against the
   API's allow-list, so a hand-edited URL can never produce a 422.
 
+### Contact photos
+
+The photo picker sends the selected JPG, PNG, or WebP as a small `data:image/...`
+URL in the `photo_url` JSON field; it accepts an existing `http(s)` photo URL too.
+The frontend assumes the Contacts API exposes `photo_url: string | null` on
+`ContactRead`, `ContactCreate`, and `ContactReplace`. This is intentionally a
+snake_case wire field, so an edit PUT resends an unchanged existing photo rather
+than clearing it. Images are limited to 500 KB before base64 encoding to stay
+under Next's default server-action request limit.
+
 ## Conventions
 
 - **Forms** — one source of truth: `CONTACT_FIELD_GROUPS` in

@@ -18,6 +18,11 @@ export interface Contact {
   postal_code: string | null;
   country: string | null;
   notes: string | null;
+  /**
+   * A persisted image source for the contact. This is either a hosted URL or an
+   * image data URL created by the form's local file picker.
+   */
+  photo_url: string | null;
   created_at: string;
   updated_at: string;
   full_name: string;

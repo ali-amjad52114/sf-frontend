@@ -36,6 +36,48 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/street address/i)).toHaveValue("");
   });
 
+  it("previews and submits an existing photo without requiring a replacement", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    const photoUrl = "https://images.example.test/ada.png";
+    renderForm(action, makeContact({ photo_url: photoUrl }));
+
+    expect(screen.getByRole("img", { name: /selected contact photo/i })).toHaveAttribute(
+      "src",
+      photoUrl,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    expect(action.mock.calls[0][1].get("photo_url")).toBe(photoUrl);
+  });
+
+  it("reads an uploaded image into the form payload and preview", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    renderForm(action);
+    const input = screen.getByLabelText(/upload photo/i);
+    const photo = new File(["avatar"], "avatar.png", { type: "image/png" });
+
+    await userEvent.upload(input, photo);
+
+    const preview = await screen.findByRole("img", {
+      name: /selected contact photo/i,
+    });
+    expect(preview.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+    expect(
+      screen.getByDisplayValue(preview.getAttribute("src") ?? ""),
+    ).toHaveAttribute("name", "photo_url");
+
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    expect(action.mock.calls[0][1].get("photo_url")).toMatch(
+      /^data:image\/png;base64,/,
+    );
+  });
+
   it("submits the entered values to the action", async () => {
     const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
       async () => ({ status: "idle" }),
