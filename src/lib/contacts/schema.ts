@@ -282,7 +282,7 @@ function addressValuesFromFormData(formData: FormData) {
   return [...rows.entries()]
     .sort(([left], [right]) => left - right)
     .map(([, row]) => row)
-    // An unused row should not create a meaningless `{ type: "home" }`
+    // An unused row should not create a meaningless `{ type: "Home" }`
     // address. A row with any location component is preserved, including a
     // city-only legacy address that was valid before this UI existed.
     .filter((row) =>

@@ -75,7 +75,7 @@ describe("multi-address formatting", () => {
   it("formats one new address consistently with the legacy display", () => {
     expect(
       addressLineFor({
-        type: "work",
+        type: "Work",
         address: "1 Market St",
         city: "San Francisco",
         state: "CA",
@@ -88,7 +88,7 @@ describe("multi-address formatting", () => {
   it("turns a legacy flat address into a Home form row", () => {
     expect(contactAddresses(makeContact())).toEqual([
       {
-        type: "home",
+        type: "Home",
         address: null,
         city: "San Francisco",
         state: "CA",
@@ -101,7 +101,7 @@ describe("multi-address formatting", () => {
   it("prefers addresses returned by the new API", () => {
     const addresses = [
       {
-        type: "other" as const,
+        type: "Other" as const,
         address: "PO Box 9",
         city: null,
         state: null,

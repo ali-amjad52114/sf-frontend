@@ -41,7 +41,7 @@ type AddressRow = {
 };
 
 const EMPTY_ADDRESS: ContactAddressFormValues = {
-  type: "home",
+  type: "Home",
   address: "",
   city: "",
   state: "",
@@ -145,7 +145,7 @@ function AddressFields({
                     <select
                       id={fieldId("type")}
                       name={fieldName("type")}
-                      defaultValue={row.values.type ?? "home"}
+                      defaultValue={row.values.type ?? "Home"}
                       aria-invalid={errors?.type ? true : undefined}
                       aria-describedby={errors?.type ? `${fieldId("type")}-error` : undefined}
                       className={`w-full rounded-md border bg-input px-3 py-2 text-sm text-foreground transition-colors focus:bg-input ${
@@ -156,7 +156,7 @@ function AddressFields({
                     >
                       {ADDRESS_TYPES.map((type) => (
                         <option key={type} value={type}>
-                          {type[0].toUpperCase() + type.slice(1)}
+                          {type}
                         </option>
                       ))}
                     </select>

@@ -77,6 +77,38 @@ test.describe('Contacts', () => {
     await expect(page.getByRole('heading', { name: 'No matching contacts' })).toBeVisible()
   })
 
+  test('creates and edits a multi-address contact through the real API', async ({ page }) => {
+    const email = uniqueEmail('addresses')
+    const last = `Addresses${Date.now().toString().slice(-6)}`
+
+    await page.goto('/contacts/new')
+    await page.getByLabel('First name').fill('Address')
+    await page.getByLabel('Last name').fill(last)
+    await page.getByLabel('Email', { exact: false }).first().fill(email)
+    await page.getByRole('button', { name: 'Add address' }).click()
+    await page.getByLabel('Address type').selectOption('Home')
+    await page.getByLabel('Street address').fill('1 Create Way')
+    await page.getByLabel('City').fill('San Francisco')
+    await page.getByLabel('State / region').fill('CA')
+    await page.getByLabel('Postal code').fill('94105')
+    await page.getByLabel('Country').fill('USA')
+    await page.getByRole('button', { name: 'Create contact' }).click()
+
+    const fullName = `Address ${last}`
+    await expect(page.getByRole('heading', { level: 1, name: fullName })).toBeVisible()
+    await expect(page.getByText('Home', { exact: true })).toBeVisible()
+    await expect(page.getByText('1 Create Way, San Francisco, CA 94105, USA')).toBeVisible()
+
+    await page.getByRole('link', { name: 'Edit' }).click()
+    await page.getByLabel('Address type').selectOption('Work')
+    await page.getByLabel('Street address').fill('2 Update Road')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+
+    await expect(page.getByText('Work', { exact: true })).toBeVisible()
+    await expect(page.getByText('2 Update Road, San Francisco, CA 94105, USA')).toBeVisible()
+    await deleteFromDetailPage(page, fullName)
+  })
+
   test('rejects a duplicate email with a field-level error', async ({ page }) => {
     const email = uniqueEmail('dupe')
     const last = `Dupe${Date.now().toString().slice(-6)}`

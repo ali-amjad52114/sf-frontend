@@ -78,7 +78,7 @@ export function contactAddresses(contact: Contact): ContactAddress[] {
 
   return [
     {
-      type: "home",
+      type: "Home",
       address: contact.address,
       city: contact.city,
       state: contact.state,

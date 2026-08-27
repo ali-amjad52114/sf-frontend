@@ -44,9 +44,9 @@ describe("ContactForm", () => {
 
     const types = screen.getAllByLabelText("Address type");
     expect(types).toHaveLength(1);
-    expect(types[0]).toHaveValue("home");
-    await user.selectOptions(types[0], "work");
-    expect(types[0]).toHaveValue("work");
+    expect(types[0]).toHaveValue("Home");
+    await user.selectOptions(types[0], "Work");
+    expect(types[0]).toHaveValue("Work");
 
     await user.click(screen.getByRole("button", { name: /add address/i }));
     expect(screen.getAllByLabelText("Address type")).toHaveLength(2);
@@ -63,13 +63,13 @@ describe("ContactForm", () => {
     renderForm(action);
 
     await user.click(screen.getByRole("button", { name: /add address/i }));
-    await user.selectOptions(screen.getByLabelText("Address type"), "other");
+    await user.selectOptions(screen.getByLabelText("Address type"), "Other");
     await user.type(screen.getByLabelText(/street address/i), "PO Box 9");
     await user.click(screen.getByRole("button", { name: /create contact/i }));
 
     await waitFor(() => expect(action).toHaveBeenCalled());
     const formData = action.mock.calls[0][1];
-    expect(formData.get("addresses[0][type]")).toBe("other");
+    expect(formData.get("addresses[0][type]")).toBe("Other");
     expect(formData.get("addresses[0][address]")).toBe("PO Box 9");
   });
 
@@ -81,7 +81,7 @@ describe("ContactForm", () => {
         values: {
           addresses: [
             {
-              type: "work",
+              type: "Work",
               address: "",
               city: "London",
               state: "",
@@ -98,7 +98,7 @@ describe("ContactForm", () => {
 
     await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-    expect(await screen.findByLabelText("Address type")).toHaveValue("work");
+    expect(await screen.findByLabelText("Address type")).toHaveValue("Work");
     expect(screen.getByLabelText(/street address/i)).toHaveAttribute(
       "aria-invalid",
       "true",

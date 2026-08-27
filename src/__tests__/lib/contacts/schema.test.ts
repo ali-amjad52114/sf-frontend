@@ -74,7 +74,7 @@ describe("contactInputSchema", () => {
       ...values(),
       addresses: [
         {
-          type: "work",
+          type: "Work",
           address: "  1 Market St  ",
           city: " San Francisco ",
           state: "CA",
@@ -86,7 +86,7 @@ describe("contactInputSchema", () => {
 
     expect(parsed.addresses).toEqual([
       {
-        type: "work",
+        type: "Work",
         address: "1 Market St",
         city: "San Francisco",
         state: "CA",
@@ -101,7 +101,7 @@ describe("contactInputSchema", () => {
       ...values(),
       addresses: [
         {
-          type: "home",
+          type: "Home",
           address: "a".repeat(301),
           city: "",
           state: "",
@@ -123,7 +123,7 @@ describe("formDataToValues", () => {
     const formData = new FormData();
     formData.set("first_name", "Grace");
     formData.set("email", "grace@example.com");
-    formData.set("addresses[0][type]", "work");
+    formData.set("addresses[0][type]", "Work");
     formData.set("addresses[0][address]", "1 Main St");
     formData.set("addresses[0][city]", "London");
     formData.set("ignored", "nope");
@@ -133,7 +133,7 @@ describe("formDataToValues", () => {
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
     expect(extracted.addresses).toEqual([
-      { type: "work", address: "1 Main St", city: "London" },
+      { type: "Work", address: "1 Main St", city: "London" },
     ]);
     // The first dynamic address keeps legacy API consumers working as well.
     expect(extracted.address).toBe("1 Main St");

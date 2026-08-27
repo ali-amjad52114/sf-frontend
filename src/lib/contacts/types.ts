@@ -4,7 +4,8 @@
  */
 
 /** `ContactRead` — a stored contact, as returned by every contact endpoint. */
-export const ADDRESS_TYPES = ["home", "work", "other"] as const;
+/** Backend wire values; display labels intentionally use these same friendly names. */
+export const ADDRESS_TYPES = ["Home", "Work", "Other"] as const;
 
 /** Values accepted by an address's `type` field on the API. */
 export type AddressType = (typeof ADDRESS_TYPES)[number];

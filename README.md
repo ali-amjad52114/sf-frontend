@@ -137,7 +137,7 @@ field names:
 
 ```json
 {
-  "type": "home",
+  "type": "Home",
   "address": "1 Market St, Suite 400",
   "city": "San Francisco",
   "state": "CA",
@@ -146,7 +146,7 @@ field names:
 }
 ```
 
-`type` is the lowercase enum `home`, `work`, or `other`; `address` is the street
+`type` is the enum `Home`, `Work`, or `Other`; `address` is the street
 line and all location fields are nullable. Completely blank rows are omitted. The
 frontend deliberately retains the former top-level `address`, `city`, `state`,
 `postal_code`, and `country` fields. When a user saves one or more addresses,
