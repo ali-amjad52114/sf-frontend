@@ -36,6 +36,76 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/street address/i)).toHaveValue("");
   });
 
+  it("adds, labels, and removes dynamic address rows", async () => {
+    const user = userEvent.setup();
+    renderForm(jest.fn());
+
+    await user.click(screen.getByRole("button", { name: /add address/i }));
+
+    const types = screen.getAllByLabelText("Address type");
+    expect(types).toHaveLength(1);
+    expect(types[0]).toHaveValue("home");
+    await user.selectOptions(types[0], "work");
+    expect(types[0]).toHaveValue("work");
+
+    await user.click(screen.getByRole("button", { name: /add address/i }));
+    expect(screen.getAllByLabelText("Address type")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Remove address 1" }));
+    expect(screen.getAllByLabelText("Address type")).toHaveLength(1);
+  });
+
+  it("submits addresses as indexed array fields", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    const user = userEvent.setup();
+    renderForm(action);
+
+    await user.click(screen.getByRole("button", { name: /add address/i }));
+    await user.selectOptions(screen.getByLabelText("Address type"), "other");
+    await user.type(screen.getByLabelText(/street address/i), "PO Box 9");
+    await user.click(screen.getByRole("button", { name: /create contact/i }));
+
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    const formData = action.mock.calls[0][1];
+    expect(formData.get("addresses[0][type]")).toBe("other");
+    expect(formData.get("addresses[0][address]")).toBe("PO Box 9");
+  });
+
+  it("restores address rows and their field errors after a failed submission", async () => {
+    const action = jest.fn(
+      async (): Promise<FormState> => ({
+        status: "error",
+        message: "Please fix the highlighted fields.",
+        values: {
+          addresses: [
+            {
+              type: "work",
+              address: "",
+              city: "London",
+              state: "",
+              postal_code: "",
+              country: "UK",
+            },
+          ],
+        },
+        addressErrors: { 0: { address: "Street address is too short." } },
+      }),
+    );
+    const user = userEvent.setup();
+    renderForm(action);
+
+    await user.click(screen.getByRole("button", { name: /create contact/i }));
+
+    expect(await screen.findByLabelText("Address type")).toHaveValue("work");
+    expect(screen.getByLabelText(/street address/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByText("Street address is too short.")).toBeVisible();
+  });
+
   it("submits the entered values to the action", async () => {
     const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
       async () => ({ status: "idle" }),

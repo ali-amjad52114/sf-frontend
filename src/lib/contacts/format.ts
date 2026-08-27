@@ -1,4 +1,4 @@
-import type { Contact } from "./types";
+import type { Contact, ContactAddress, ContactAddressFormValues } from "./types";
 
 /** Presentation helpers shared by the list, the detail page, and the cards. */
 
@@ -53,4 +53,51 @@ export function addressLine(contact: Contact): string | null {
   ].filter((part): part is string => Boolean(part && part.trim()));
 
   return parts.length ? parts.join(", ") : null;
+}
+
+/** Format one member of `addresses[]`, omitting empty optional components. */
+export function addressLineFor(address: ContactAddress): string | null {
+  const parts = [
+    address.address,
+    address.city,
+    [address.state, address.postal_code].filter(Boolean).join(" "),
+    address.country,
+  ].filter((part): part is string => Boolean(part && part.trim()));
+
+  return parts.length ? parts.join(", ") : null;
+}
+
+/**
+ * Prefer the multi-address API field. Contacts returned by the pre-migration
+ * API have no `addresses` key, so expose their flat values as a single Home
+ * row to keep them editable in the new UI.
+ */
+export function contactAddresses(contact: Contact): ContactAddress[] {
+  if (contact.addresses?.length) return contact.addresses;
+  if (!addressLine(contact)) return [];
+
+  return [
+    {
+      type: "home",
+      address: contact.address,
+      city: contact.city,
+      state: contact.state,
+      postal_code: contact.postal_code,
+      country: contact.country,
+    },
+  ];
+}
+
+/** Shape an address for uncontrolled form inputs, converting null to blanks. */
+export function addressFormValues(
+  address: ContactAddress,
+): Required<ContactAddressFormValues> {
+  return {
+    type: address.type,
+    address: address.address ?? "",
+    city: address.city ?? "",
+    state: address.state ?? "",
+    postal_code: address.postal_code ?? "",
+    country: address.country ?? "",
+  };
 }

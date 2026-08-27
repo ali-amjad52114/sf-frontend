@@ -1,6 +1,8 @@
 import {
+  addressLineFor,
   addressLine,
   avatarHue,
+  contactAddresses,
   formatTimestamp,
   initials,
   jobLine,
@@ -66,5 +68,47 @@ describe("addressLine", () => {
         makeContact({ city: null, state: null, country: null, postal_code: null }),
       ),
     ).toBeNull();
+  });
+});
+
+describe("multi-address formatting", () => {
+  it("formats one new address consistently with the legacy display", () => {
+    expect(
+      addressLineFor({
+        type: "work",
+        address: "1 Market St",
+        city: "San Francisco",
+        state: "CA",
+        postal_code: "94105",
+        country: "USA",
+      }),
+    ).toBe("1 Market St, San Francisco, CA 94105, USA");
+  });
+
+  it("turns a legacy flat address into a Home form row", () => {
+    expect(contactAddresses(makeContact())).toEqual([
+      {
+        type: "home",
+        address: null,
+        city: "San Francisco",
+        state: "CA",
+        postal_code: null,
+        country: "USA",
+      },
+    ]);
+  });
+
+  it("prefers addresses returned by the new API", () => {
+    const addresses = [
+      {
+        type: "other" as const,
+        address: "PO Box 9",
+        city: null,
+        state: null,
+        postal_code: "10001",
+        country: "USA",
+      },
+    ];
+    expect(contactAddresses(makeContact({ addresses }))).toBe(addresses);
   });
 });
