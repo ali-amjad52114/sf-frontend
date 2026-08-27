@@ -60,6 +60,8 @@ export interface Contact {
    * omit this key altogether.
    */
   addresses?: ContactAddress[];
+  /** A persisted base64 image data URI created by the form's local file picker. */
+  photo: string | null;
   created_at: string;
   updated_at: string;
   full_name: string;
@@ -82,6 +84,8 @@ export interface ContactInput {
   notes: string | null;
   /** The planned multi-address API field. */
   addresses: ContactAddress[];
+  /** A persisted base64 image data URI created by the form's local file picker. */
+  photo: string | null;
 }
 
 /** `ContactPage` — one page of contacts plus the totals needed to paginate. */

@@ -45,6 +45,35 @@ const contactAddressSchema = z.object({
   country: optionalText(120, "Country"),
 }) satisfies z.ZodType<ContactAddress, unknown>;
 
+/**
+ * Keep the payload below Next's default 1 MB server-action body limit once a
+ * selected image is base64 encoded. The backend contract accepts only base64
+ * image data URIs, not hosted URLs.
+ */
+export const MAX_PHOTO_FILE_SIZE = 500 * 1024;
+export const MAX_PHOTO_DATA_URI_LENGTH = 700_000;
+
+function isBase64ImageDataUri(value: string) {
+  return /^data:image\/[a-z0-9.+-]+;base64,(?=.+)(?:[a-z0-9+/]{4})*(?:[a-z0-9+/]{2}==|[a-z0-9+/]{3}=)?$/i.test(
+    value,
+  );
+}
+
+const photo = z
+  .string()
+  .trim()
+  .max(
+    MAX_PHOTO_DATA_URI_LENGTH,
+    "Photo must be 500 KB or smaller before it is uploaded",
+  )
+  .refine(
+    (value) => !value || isBase64ImageDataUri(value),
+    "Choose a base64-encoded image file",
+  )
+  .transform((value) => value || null)
+  .nullable()
+  .default(null);
+
 export const contactInputSchema = z.object({
   first_name: requiredText(100, "First name"),
   last_name: requiredText(100, "Last name"),
@@ -70,6 +99,7 @@ export const contactInputSchema = z.object({
     .transform((value) => value || null)
     .nullable()
     .default(null),
+  photo,
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 /** Collapse a ZodError into one message per field, keyed by input name. */
@@ -117,7 +147,7 @@ export function zodAddressFieldErrors(error: z.ZodError): AddressErrors {
 /* ------------------------------------------------------------------ */
 
 export interface ContactFieldSpec {
-  name: Exclude<keyof ContactInput, "addresses">;
+  name: Exclude<keyof ContactInput, "addresses" | "photo">;
   label: string;
   type?: "text" | "email" | "tel" | "textarea";
   required?: boolean;
@@ -263,6 +293,12 @@ export const ADDRESS_FIELDS = LEGACY_ADDRESS_FIELDS;
 
 const MUTATION_FIELDS = [...CONTACT_FIELDS, ...LEGACY_ADDRESS_FIELDS];
 
+/** All scalar wire fields; `addresses[]` is parsed separately below. */
+export const CONTACT_INPUT_FIELD_NAMES = [
+  ...MUTATION_FIELDS.map((field) => field.name),
+  "photo",
+] as const satisfies readonly Exclude<keyof ContactInput, "addresses">[];
+
 const ADDRESS_FORM_NAME = /^addresses\[(\d+)\]\[(type|address|city|state|postal_code|country)\]$/;
 
 function addressValuesFromFormData(formData: FormData) {
@@ -295,9 +331,9 @@ function addressValuesFromFormData(formData: FormData) {
 /** Pull the contact fields out of a submitted form, as raw strings. */
 export function formDataToValues(formData: FormData): ContactFormValues {
   const values = Object.fromEntries(
-    MUTATION_FIELDS.map((field) => [
-      field.name,
-      String(formData.get(field.name) ?? ""),
+    CONTACT_INPUT_FIELD_NAMES.map((name) => [
+      name,
+      String(formData.get(name) ?? ""),
     ]),
   ) as ContactFormValues;
   const addresses = addressValuesFromFormData(formData);

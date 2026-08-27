@@ -109,6 +109,37 @@ test.describe('Contacts', () => {
     await deleteFromDetailPage(page, fullName)
   })
 
+  test('creates and retains a base64 photo through a PUT edit', async ({ page }) => {
+    const email = uniqueEmail('photo')
+    const last = `Photo${Date.now().toString().slice(-6)}`
+
+    await page.goto('/contacts/new')
+    await page.getByLabel('First name').fill('Photo')
+    await page.getByLabel('Last name').fill(last)
+    await page.getByLabel('Email', { exact: false }).first().fill(email)
+    await page.getByLabel('Upload photo').setInputFiles({
+      name: 'avatar.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL7DwAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+    })
+    await expect(page.getByRole('button', { name: 'Create contact' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Create contact' }).click()
+
+    const avatar = page.locator('header img')
+    await expect(avatar).toHaveAttribute('src', /^data:image\/png;base64,/)
+    const originalPhoto = await avatar.getAttribute('src')
+
+    await page.getByRole('link', { name: 'Edit' }).click()
+    await page.getByLabel('Job title').fill('Photo Engineer')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await expect(avatar).toHaveAttribute('src', originalPhoto!)
+
+    await deleteFromDetailPage(page, `Photo ${last}`)
+  })
+
   test('rejects a duplicate email with a field-level error', async ({ page }) => {
     const email = uniqueEmail('dupe')
     const last = `Dupe${Date.now().toString().slice(-6)}`

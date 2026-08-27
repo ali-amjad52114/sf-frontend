@@ -8,6 +8,7 @@ import Field from "@/components/ui/Field";
 import Button, { buttonClasses } from "@/components/ui/Button";
 import { ADDRESS_FIELDS, CONTACT_FIELD_GROUPS } from "@/lib/contacts/schema";
 import { addressFormValues, contactAddresses } from "@/lib/contacts/format";
+import ContactPhotoField from "@/components/contacts/ContactPhotoField";
 import {
   ADDRESS_TYPES,
   EMPTY_FORM_STATE,
@@ -22,15 +23,22 @@ export type ContactFormAction = (
   formData: FormData,
 ) => Promise<FormState>;
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({
+  label,
+  photoIsProcessing,
+}: {
+  label: string;
+  photoIsProcessing: boolean;
+}) {
   const { pending } = useFormStatus();
+  const disabled = pending || photoIsProcessing;
 
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={disabled}>
       {pending ? (
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       ) : null}
-      {pending ? "Saving…" : label}
+      {pending ? "Saving…" : photoIsProcessing ? "Processing photo…" : label}
     </Button>
   );
 }
@@ -245,6 +253,7 @@ export default function ContactForm({
   const addressFieldsKey = state.values?.addresses
     ? `submitted-${JSON.stringify(state.values.addresses)}`
     : `contact-${contact?.id ?? "new"}`;
+  const [photoIsProcessing, setPhotoIsProcessing] = useState(false);
 
   function valueFor(name: keyof ContactInput): string {
     if (name === "addresses") return "";
@@ -258,7 +267,14 @@ export default function ContactForm({
   }
 
   return (
-    <form action={formAction} noValidate className="space-y-8">
+    <form
+      action={formAction}
+      noValidate
+      className="space-y-8"
+      onSubmit={(event) => {
+        if (photoIsProcessing) event.preventDefault();
+      }}
+    >
       {state.status === "error" && state.message ? (
         <div
           role="alert"
@@ -272,6 +288,12 @@ export default function ContactForm({
           <span>{state.message}</span>
         </div>
       ) : null}
+
+      <ContactPhotoField
+        defaultValue={state.values?.photo ?? contact?.photo}
+        error={state.fieldErrors?.photo}
+        onReadStatusChange={setPhotoIsProcessing}
+      />
 
       {CONTACT_FIELD_GROUPS.map((group) => (
         <fieldset key={group.title} className="space-y-4">
@@ -306,7 +328,7 @@ export default function ContactForm({
       />
 
       <div className="flex items-center gap-2 border-t border-hairline pt-4">
-        <SubmitButton label={submitLabel} />
+        <SubmitButton label={submitLabel} photoIsProcessing={photoIsProcessing} />
         <Link href={cancelHref} className={buttonClasses("secondary")}>
           Cancel
         </Link>

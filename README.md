@@ -157,6 +157,16 @@ in the edit UI. If the backend adopts different object keys (for example
 `address_type` or `street`), update `ContactAddress` and the array-form parser
 in `src/lib/contacts/schema.ts` together.
 
+### Contact photos
+
+The photo picker sends the selected JPG, PNG, or WebP as a small `data:image/...`
+URI in the `photo` JSON field. The frontend assumes the Contacts API exposes
+`photo: string | null` on `ContactRead`, `ContactCreate`, and `ContactReplace`,
+and rejects hosted `http(s)` URLs because the backend only accepts base64 image
+data URIs. An edit PUT resends an unchanged photo rather than clearing it.
+Images are limited to 500 KB before base64 encoding to stay under Next's default
+server-action request limit.
+
 ## Conventions
 
 - **Forms** — one source of truth: `CONTACT_FIELD_GROUPS` in
