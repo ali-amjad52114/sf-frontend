@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, Pencil } from "lucide-react";
 import ContactAvatar from "@/components/contacts/ContactAvatar";
 import DeleteContactButton from "@/components/contacts/DeleteContactButton";
+import ContactQuickActions from "@/components/contacts/ContactQuickActions";
 import { buttonClasses } from "@/components/ui/Button";
 import { getContact } from "@/lib/contacts/api";
 import {
@@ -94,6 +95,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
           />
         </div>
       </header>
+
+      <ContactQuickActions email={contact.email} phone={contact.phone} />
 
       <dl className="rounded-lg border border-border bg-card">
         <Row label="Email">
