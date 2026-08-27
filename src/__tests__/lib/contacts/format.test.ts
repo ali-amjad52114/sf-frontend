@@ -86,7 +86,7 @@ describe("multi-address formatting", () => {
   });
 
   it("turns a legacy flat address into a Home form row", () => {
-    expect(contactAddresses(makeContact())).toEqual([
+    expect(contactAddresses(makeContact({ addresses: undefined }))).toEqual([
       {
         type: "Home",
         address: null,
@@ -110,5 +110,9 @@ describe("multi-address formatting", () => {
       },
     ];
     expect(contactAddresses(makeContact({ addresses }))).toBe(addresses);
+  });
+
+  it("treats an explicitly empty new API array as authoritative", () => {
+    expect(contactAddresses(makeContact({ addresses: [] }))).toEqual([]);
   });
 });

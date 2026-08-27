@@ -109,7 +109,10 @@ function AddressFields({
       {addresses.length ? (
         <div className="space-y-4">
           {addresses.map((row, index) => {
-            const errors = addressErrors?.[index];
+            // Failed submissions key errors by the original row index. That
+            // index is captured in the stable row id so deleting a preceding
+            // row cannot move an existing error to a different address.
+            const errors = addressErrors?.[row.id];
             const fieldId = (name: string) => `address-${row.id}-${name}`;
             const fieldName = (name: string) => `addresses[${index}][${name}]`;
 

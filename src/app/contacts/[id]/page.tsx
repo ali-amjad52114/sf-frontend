@@ -51,6 +51,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
   const subtitle = jobLine(contact);
   const address = addressLine(contact);
   const addresses = contactAddresses(contact);
+  const hasAddressArray = contact.addresses !== undefined;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -109,8 +110,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
         </Row>
         <Row label="Company">{contact.company}</Row>
         <Row label="Job title">{contact.job_title}</Row>
-        <Row label={addresses.length > 1 ? "Addresses" : "Address"}>
-          {contact.addresses?.length ? (
+        <Row label={hasAddressArray && addresses.length > 1 ? "Addresses" : "Address"}>
+          {hasAddressArray && addresses.length ? (
             <div className="space-y-3">
               {addresses.map((item, index) => (
                 <div key={`${item.type}-${index}`}>
@@ -122,7 +123,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
               ))}
             </div>
           ) : (
-            address
+            hasAddressArray ? null : address
           )}
         </Row>
         <Row label="Notes">

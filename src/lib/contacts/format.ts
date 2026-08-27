@@ -73,7 +73,10 @@ export function addressLineFor(address: ContactAddress): string | null {
  * row to keep them editable in the new UI.
  */
 export function contactAddresses(contact: Contact): ContactAddress[] {
-  if (contact.addresses?.length) return contact.addresses;
+  // An empty array is authoritative: the contact has no addresses. Only an
+  // omitted field belongs to a pre-migration response and may use the legacy
+  // flat-address fallback.
+  if (contact.addresses !== undefined) return contact.addresses;
   if (!addressLine(contact)) return [];
 
   return [

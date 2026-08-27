@@ -28,7 +28,7 @@ describe("ContactForm", () => {
   });
 
   it("prefills from an existing contact", () => {
-    renderForm(jest.fn(), makeContact());
+    renderForm(jest.fn(), makeContact({ addresses: undefined }));
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
@@ -104,6 +104,34 @@ describe("ContactForm", () => {
       "true",
     );
     expect(screen.getByText("Street address is too short.")).toBeVisible();
+  });
+
+  it("keeps a failed row's errors with that row after removing an earlier address", async () => {
+    const action = jest.fn(
+      async (): Promise<FormState> => ({
+        status: "error",
+        values: {
+          addresses: [
+            { type: "Home", address: "1 First St" },
+            { type: "Work", address: "2 Second St" },
+          ],
+        },
+        addressErrors: { 1: { address: "Second address is invalid." } },
+      }),
+    );
+    const user = userEvent.setup();
+    renderForm(action);
+
+    await user.click(screen.getByRole("button", { name: /create contact/i }));
+
+    expect(await screen.findByText("Second address is invalid.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Remove address 1" }));
+
+    expect(screen.getByText("Second address is invalid.")).toBeVisible();
+    expect(screen.getByLabelText(/street address/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
   });
 
   it("submits the entered values to the action", async () => {
