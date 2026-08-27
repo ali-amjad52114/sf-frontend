@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ContactForm from "@/components/contacts/ContactForm";
 import { makeContact } from "../mocks/handlers";
@@ -14,6 +14,30 @@ function renderForm(action: jest.Mock, contact?: ReturnType<typeof makeContact>)
       cancelHref="/contacts"
     />,
   );
+}
+
+class DeferredFileReader {
+  static instances: DeferredFileReader[] = [];
+
+  result: string | ArrayBuffer | null = null;
+  private readonly listeners = new Map<string, Array<() => void>>();
+
+  addEventListener(type: string, listener: () => void) {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+  }
+
+  readAsDataURL() {
+    DeferredFileReader.instances.push(this);
+  }
+
+  abort() {
+    this.listeners.get("abort")?.forEach((listener) => listener());
+  }
+
+  finish(result: string) {
+    this.result = result;
+    this.listeners.get("load")?.forEach((listener) => listener());
+  }
 }
 
 describe("ContactForm", () => {
@@ -76,6 +100,67 @@ describe("ContactForm", () => {
     expect(action.mock.calls[0][1].get("photo_url")).toMatch(
       /^data:image\/png;base64,/,
     );
+  });
+
+  it("waits for the latest photo read before submitting", async () => {
+    const nativeFileReader = globalThis.FileReader;
+    DeferredFileReader.instances = [];
+    globalThis.FileReader = DeferredFileReader as unknown as typeof FileReader;
+
+    try {
+      renderForm(jest.fn());
+      const input = screen.getByLabelText(/upload photo/i);
+      const submit = screen.getByRole("button", { name: /create contact/i });
+
+      await userEvent.upload(
+        input,
+        new File(["first"], "first.png", { type: "image/png" }),
+      );
+      const firstReader = DeferredFileReader.instances[0];
+      expect(submit).toBeDisabled();
+      expect(submit).toHaveTextContent("Processing photo…");
+
+      await userEvent.upload(
+        input,
+        new File(["second"], "second.png", { type: "image/png" }),
+      );
+      const secondReader = DeferredFileReader.instances[1];
+
+      act(() => firstReader.finish("data:image/png;base64,Zmlyc3Q="));
+      act(() => secondReader.finish("data:image/png;base64,c2Vjb25k"));
+
+      await waitFor(() => expect(submit).toBeEnabled());
+      expect(screen.getByRole("img", { name: /selected contact photo/i })).toHaveAttribute(
+        "src",
+        "data:image/png;base64,c2Vjb25k",
+      );
+    } finally {
+      globalThis.FileReader = nativeFileReader;
+    }
+  });
+
+  it("cancels a pending replacement when the user removes the current photo", async () => {
+    const nativeFileReader = globalThis.FileReader;
+    DeferredFileReader.instances = [];
+    globalThis.FileReader = DeferredFileReader as unknown as typeof FileReader;
+
+    try {
+      renderForm(jest.fn(), makeContact({ photo_url: "https://images.example.test/ada.png" }));
+      const input = screen.getByLabelText(/replace photo/i);
+
+      await userEvent.upload(
+        input,
+        new File(["replacement"], "replacement.png", { type: "image/png" }),
+      );
+      const reader = DeferredFileReader.instances[0];
+      await userEvent.click(screen.getByRole("button", { name: /remove photo/i }));
+      act(() => reader.finish("data:image/png;base64,cmVwbGFjZW1lbnQ="));
+
+      expect(screen.queryByRole("img", { name: /selected contact photo/i })).toBeNull();
+      expect(input).toHaveValue("");
+    } finally {
+      globalThis.FileReader = nativeFileReader;
+    }
   });
 
   it("submits the entered values to the action", async () => {

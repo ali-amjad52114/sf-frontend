@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { MAX_PHOTO_FILE_SIZE } from "@/lib/contacts/schema";
@@ -16,16 +16,36 @@ const ACCEPTED_LABEL = "JPG, PNG, or WebP up to 500 KB";
 export default function ContactPhotoField({
   defaultValue,
   error,
+  onReadStatusChange,
 }: {
   defaultValue?: string | null;
   error?: string;
+  onReadStatusChange?: (isReading: boolean) => void;
 }) {
   const inputId = useId();
   const errorId = `${inputId}-error`;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const readerRef = useRef<FileReader | null>(null);
+  const readVersion = useRef(0);
   const [photoUrl, setPhotoUrl] = useState(defaultValue ?? "");
   const [localError, setLocalError] = useState<string>();
 
+  useEffect(
+    () => () => {
+      readerRef.current?.abort();
+    },
+    [],
+  );
+
+  function invalidateRead() {
+    readVersion.current += 1;
+    readerRef.current?.abort();
+    readerRef.current = null;
+    onReadStatusChange?.(false);
+  }
+
   function selectPhoto(file?: File) {
+    invalidateRead();
     setLocalError(undefined);
     if (!file) return;
 
@@ -38,11 +58,20 @@ export default function ContactPhotoField({
       return;
     }
 
+    const version = readVersion.current;
     const reader = new FileReader();
+    readerRef.current = reader;
+    onReadStatusChange?.(true);
     reader.addEventListener("load", () => {
+      if (version !== readVersion.current) return;
+      readerRef.current = null;
+      onReadStatusChange?.(false);
       if (typeof reader.result === "string") setPhotoUrl(reader.result);
     });
     reader.addEventListener("error", () => {
+      if (version !== readVersion.current) return;
+      readerRef.current = null;
+      onReadStatusChange?.(false);
       setLocalError("The selected image could not be read. Please try another file.");
     });
     reader.readAsDataURL(file);
@@ -80,6 +109,7 @@ export default function ContactPhotoField({
           </label>
           <input
             id={inputId}
+            ref={fileInputRef}
             type="file"
             accept={ACCEPTED_TYPES.join(",")}
             className="sr-only"
@@ -92,8 +122,10 @@ export default function ContactPhotoField({
               variant="ghost"
               size="sm"
               onClick={() => {
+                invalidateRead();
                 setPhotoUrl("");
                 setLocalError(undefined);
+                if (fileInputRef.current) fileInputRef.current.value = "";
               }}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />

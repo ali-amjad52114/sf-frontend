@@ -8,6 +8,16 @@ import { jobLine } from "@/lib/contacts/format";
 import type { ContactListQuery } from "@/lib/contacts/query";
 import type { Contact } from "@/lib/contacts/types";
 
+/** Keep large base64 photos out of the paginated list's client component payload. */
+function listAvatarContact(contact: Contact) {
+  return {
+    first_name: contact.first_name,
+    last_name: contact.last_name,
+    email: contact.email,
+    photo_url: contact.photo_url?.startsWith("data:") ? null : contact.photo_url,
+  };
+}
+
 /** The contacts list. Narrow screens drop the phone and company columns. */
 export default function ContactsTable({
   contacts,
@@ -52,7 +62,7 @@ export default function ContactsTable({
               >
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-3">
-                    <ContactAvatar contact={contact} size="sm" />
+                    <ContactAvatar contact={listAvatarContact(contact)} size="sm" />
                     <div className="min-w-0">
                       <Link
                         href={`/contacts/${contact.id}`}
