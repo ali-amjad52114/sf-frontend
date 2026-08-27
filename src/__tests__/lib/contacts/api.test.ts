@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
-import { api } from "../../mocks/handlers";
+import { api, makeContact } from "../../mocks/handlers";
 import { ApiError } from "@/lib/apiClient";
 import {
   apiErrorMessage,
@@ -9,6 +9,7 @@ import {
   getContact,
   getHealth,
   listContacts,
+  replaceContact,
   toFieldErrors,
 } from "@/lib/contacts/api";
 import type { ContactInput } from "@/lib/contacts/types";
@@ -30,6 +31,7 @@ const INPUT: ContactInput = {
   postal_code: null,
   country: null,
   notes: null,
+  photo: null,
 };
 
 describe("listContacts", () => {
@@ -102,6 +104,40 @@ describe("createContact", () => {
     );
 
     await expect(createContact(INPUT)).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe("photo API contract smoke test", () => {
+  it("creates and fully replaces a contact with the base64 `photo` field", async () => {
+    const photo = "data:image/png;base64,aGVsbG8=";
+    let createPayload: Record<string, unknown> | undefined;
+    let replacePayload: Record<string, unknown> | undefined;
+
+    server.use(
+      http.post(api("/api/v1/contacts"), async ({ request }) => {
+        createPayload = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(makeContact({ id: 77, photo }), { status: 201 });
+      }),
+      http.put(api("/api/v1/contacts/:id"), async ({ request, params }) => {
+        replacePayload = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(
+          makeContact({ id: Number(params.id), photo, job_title: "Engineer" }),
+        );
+      }),
+    );
+
+    const created = await createContact({ ...INPUT, photo });
+    const replaced = await replaceContact(created.id, {
+      ...INPUT,
+      photo: created.photo,
+      job_title: "Engineer",
+    });
+
+    expect(createPayload).toMatchObject({ photo });
+    expect(createPayload).not.toHaveProperty("photo_url");
+    expect(replacePayload).toMatchObject({ photo, job_title: "Engineer" });
+    expect(replacePayload).not.toHaveProperty("photo_url");
+    expect(replaced.photo).toBe(photo);
   });
 });
 

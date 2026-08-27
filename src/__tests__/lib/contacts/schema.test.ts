@@ -1,5 +1,5 @@
 import {
-  CONTACT_FIELDS,
+  CONTACT_INPUT_FIELD_NAMES,
   contactInputSchema,
   formDataToValues,
   zodFieldErrors,
@@ -19,6 +19,7 @@ function values(overrides: Record<string, string> = {}) {
     postal_code: "",
     country: "",
     notes: "",
+    photo: "",
     ...overrides,
   };
 }
@@ -30,6 +31,7 @@ describe("contactInputSchema", () => {
     expect(parsed.email).toBe("ada@example.com");
     expect(parsed.phone).toBeNull();
     expect(parsed.notes).toBeNull();
+    expect(parsed.photo).toBeNull();
   });
 
   it("trims what the user typed", () => {
@@ -66,6 +68,28 @@ describe("contactInputSchema", () => {
       postal_code: "Postal code must be 20 characters or fewer",
     });
   });
+
+  it("accepts base64 image data URIs and rejects other sources", () => {
+    expect(
+      contactInputSchema.parse(
+        values({ photo: "data:image/png;base64,aGVsbG8=" }),
+      ).photo,
+    ).toBe("data:image/png;base64,aGVsbG8=");
+
+    const result = contactInputSchema.safeParse(
+      values({ photo: "data:text/plain;base64,aGVsbG8=" }),
+    );
+    expect(zodFieldErrors(result.error!).photo).toBe(
+      "Choose a base64-encoded image file",
+    );
+
+    const hostedUrl = contactInputSchema.safeParse(
+      values({ photo: "https://images.example.test/ada.png" }),
+    );
+    expect(zodFieldErrors(hostedUrl.error!).photo).toBe(
+      "Choose a base64-encoded image file",
+    );
+  });
 });
 
 describe("formDataToValues", () => {
@@ -80,7 +104,7 @@ describe("formDataToValues", () => {
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
     expect(Object.keys(extracted).sort()).toEqual(
-      CONTACT_FIELDS.map((field) => field.name).sort(),
+      CONTACT_INPUT_FIELD_NAMES.slice().sort(),
     );
   });
 });

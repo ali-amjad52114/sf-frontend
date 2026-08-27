@@ -31,6 +31,18 @@ describe("ContactsTable", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not serialize full data-URL photos into list avatars", () => {
+    const { container } = render(
+      <ContactsTable
+        contacts={[{ ...CONTACTS[0], photo: "data:image/png;base64,cGhvdG8=" }]}
+        query={DEFAULT_LIST_QUERY}
+      />,
+    );
+
+    expect(container.querySelector("img")).not.toBeInTheDocument();
+    expect(screen.getByText("AL")).toBeInTheDocument();
+  });
+
   it("marks the sorted column and links to the opposite direction", () => {
     render(<ContactsTable contacts={CONTACTS} query={DEFAULT_LIST_QUERY} />);
 
