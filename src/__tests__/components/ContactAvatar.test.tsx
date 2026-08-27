@@ -6,14 +6,14 @@ describe("ContactAvatar", () => {
     first_name: "Ada",
     last_name: "Lovelace",
     email: "ada@example.com",
-    photo_url: "https://images.example.test/ada.png",
+    photo: "data:image/png;base64,YWRh",
   };
 
   it("shows the persisted photo in a circular crop", () => {
     const { container } = render(<ContactAvatar contact={contact} />);
     const image = container.querySelector("img");
 
-    expect(image).toHaveAttribute("src", contact.photo_url);
+    expect(image).toHaveAttribute("src", contact.photo);
     expect(image).toHaveClass("rounded-full", "object-cover");
   });
 
@@ -27,7 +27,7 @@ describe("ContactAvatar", () => {
   });
 
   it("uses initials when a contact has no photo", () => {
-    render(<ContactAvatar contact={{ ...contact, photo_url: null }} />);
+    render(<ContactAvatar contact={{ ...contact, photo: null }} />);
 
     expect(screen.getByText("AL")).toBeInTheDocument();
   });

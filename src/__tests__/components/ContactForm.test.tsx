@@ -64,17 +64,17 @@ describe("ContactForm", () => {
     const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
       async () => ({ status: "idle" }),
     );
-    const photoUrl = "https://images.example.test/ada.png";
-    renderForm(action, makeContact({ photo_url: photoUrl }));
+    const photo = "data:image/png;base64,YWRh";
+    renderForm(action, makeContact({ photo }));
 
     expect(screen.getByRole("img", { name: /selected contact photo/i })).toHaveAttribute(
       "src",
-      photoUrl,
+      photo,
     );
 
     await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
     await waitFor(() => expect(action).toHaveBeenCalled());
-    expect(action.mock.calls[0][1].get("photo_url")).toBe(photoUrl);
+    expect(action.mock.calls[0][1].get("photo")).toBe(photo);
   });
 
   it("reads an uploaded image into the form payload and preview", async () => {
@@ -93,11 +93,11 @@ describe("ContactForm", () => {
     expect(preview.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
     expect(
       screen.getByDisplayValue(preview.getAttribute("src") ?? ""),
-    ).toHaveAttribute("name", "photo_url");
+    ).toHaveAttribute("name", "photo");
 
     await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
     await waitFor(() => expect(action).toHaveBeenCalled());
-    expect(action.mock.calls[0][1].get("photo_url")).toMatch(
+    expect(action.mock.calls[0][1].get("photo")).toMatch(
       /^data:image\/png;base64,/,
     );
   });
@@ -145,7 +145,7 @@ describe("ContactForm", () => {
     globalThis.FileReader = DeferredFileReader as unknown as typeof FileReader;
 
     try {
-      renderForm(jest.fn(), makeContact({ photo_url: "https://images.example.test/ada.png" }));
+      renderForm(jest.fn(), makeContact({ photo: "data:image/png;base64,YWRh" }));
       const input = screen.getByLabelText(/replace photo/i);
 
       await userEvent.upload(

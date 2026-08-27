@@ -30,33 +30,28 @@ function requiredText(max: number, label: string) {
 
 /**
  * Keep the payload below Next's default 1 MB server-action body limit once a
- * selected image is base64 encoded. Hosted URLs are deliberately allowed too,
- * so existing API records remain editable.
+ * selected image is base64 encoded. The backend contract accepts only base64
+ * image data URIs, not hosted URLs.
  */
 export const MAX_PHOTO_FILE_SIZE = 500 * 1024;
-export const MAX_PHOTO_DATA_URL_LENGTH = 700_000;
+export const MAX_PHOTO_DATA_URI_LENGTH = 700_000;
 
-function isSupportedPhotoSource(value: string) {
-  if (value.startsWith("data:image/")) return value.includes(";base64,");
-
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:";
-  } catch {
-    return false;
-  }
+function isBase64ImageDataUri(value: string) {
+  return /^data:image\/[a-z0-9.+-]+;base64,(?=.+)(?:[a-z0-9+/]{4})*(?:[a-z0-9+/]{2}==|[a-z0-9+/]{3}=)?$/i.test(
+    value,
+  );
 }
 
-const photoUrl = z
+const photo = z
   .string()
   .trim()
   .max(
-    MAX_PHOTO_DATA_URL_LENGTH,
+    MAX_PHOTO_DATA_URI_LENGTH,
     "Photo must be 500 KB or smaller before it is uploaded",
   )
   .refine(
-    (value) => !value || isSupportedPhotoSource(value),
-    "Choose an image file or provide an image URL",
+    (value) => !value || isBase64ImageDataUri(value),
+    "Choose a base64-encoded image file",
   )
   .transform((value) => value || null)
   .nullable()
@@ -86,7 +81,7 @@ export const contactInputSchema = z.object({
     .transform((value) => value || null)
     .nullable()
     .default(null),
-  photo_url: photoUrl,
+  photo,
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 export type ContactFormValues = z.input<typeof contactInputSchema>;
@@ -252,7 +247,7 @@ export const CONTACT_FIELDS: ContactFieldSpec[] = CONTACT_FIELD_GROUPS.flatMap(
 /** All wire fields, including the custom file picker rather than a generic Field. */
 export const CONTACT_INPUT_FIELD_NAMES = [
   ...CONTACT_FIELDS.map((field) => field.name),
-  "photo_url",
+  "photo",
 ] as const satisfies readonly (keyof ContactInput)[];
 
 /** Pull the contact fields out of a submitted form, as raw strings. */

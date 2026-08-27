@@ -34,7 +34,7 @@ describe("ContactsTable", () => {
   it("does not serialize full data-URL photos into list avatars", () => {
     const { container } = render(
       <ContactsTable
-        contacts={[{ ...CONTACTS[0], photo_url: "data:image/png;base64,cGhvdG8=" }]}
+        contacts={[{ ...CONTACTS[0], photo: "data:image/png;base64,cGhvdG8=" }]}
         query={DEFAULT_LIST_QUERY}
       />,
     );

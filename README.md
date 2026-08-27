@@ -132,12 +132,12 @@ e2e/                      Playwright specs (run against the real API)
 ### Contact photos
 
 The photo picker sends the selected JPG, PNG, or WebP as a small `data:image/...`
-URL in the `photo_url` JSON field; it accepts an existing `http(s)` photo URL too.
-The frontend assumes the Contacts API exposes `photo_url: string | null` on
-`ContactRead`, `ContactCreate`, and `ContactReplace`. This is intentionally a
-snake_case wire field, so an edit PUT resends an unchanged existing photo rather
-than clearing it. Images are limited to 500 KB before base64 encoding to stay
-under Next's default server-action request limit.
+URI in the `photo` JSON field. The frontend assumes the Contacts API exposes
+`photo: string | null` on `ContactRead`, `ContactCreate`, and `ContactReplace`,
+and rejects hosted `http(s)` URLs because the backend only accepts base64 image
+data URIs. An edit PUT resends an unchanged photo rather than clearing it.
+Images are limited to 500 KB before base64 encoding to stay under Next's default
+server-action request limit.
 
 ## Conventions
 

@@ -19,7 +19,7 @@ function values(overrides: Record<string, string> = {}) {
     postal_code: "",
     country: "",
     notes: "",
-    photo_url: "",
+    photo: "",
     ...overrides,
   };
 }
@@ -31,7 +31,7 @@ describe("contactInputSchema", () => {
     expect(parsed.email).toBe("ada@example.com");
     expect(parsed.phone).toBeNull();
     expect(parsed.notes).toBeNull();
-    expect(parsed.photo_url).toBeNull();
+    expect(parsed.photo).toBeNull();
   });
 
   it("trims what the user typed", () => {
@@ -69,18 +69,25 @@ describe("contactInputSchema", () => {
     });
   });
 
-  it("accepts image data URLs and rejects non-image sources", () => {
+  it("accepts base64 image data URIs and rejects other sources", () => {
     expect(
       contactInputSchema.parse(
-        values({ photo_url: "data:image/png;base64,aGVsbG8=" }),
-      ).photo_url,
+        values({ photo: "data:image/png;base64,aGVsbG8=" }),
+      ).photo,
     ).toBe("data:image/png;base64,aGVsbG8=");
 
     const result = contactInputSchema.safeParse(
-      values({ photo_url: "data:text/plain;base64,aGVsbG8=" }),
+      values({ photo: "data:text/plain;base64,aGVsbG8=" }),
     );
-    expect(zodFieldErrors(result.error!).photo_url).toBe(
-      "Choose an image file or provide an image URL",
+    expect(zodFieldErrors(result.error!).photo).toBe(
+      "Choose a base64-encoded image file",
+    );
+
+    const hostedUrl = contactInputSchema.safeParse(
+      values({ photo: "https://images.example.test/ada.png" }),
+    );
+    expect(zodFieldErrors(hostedUrl.error!).photo).toBe(
+      "Choose a base64-encoded image file",
     );
   });
 });

@@ -87,8 +87,8 @@ export default function ContactForm({
       ) : null}
 
       <ContactPhotoField
-        defaultValue={state.values?.photo_url ?? contact?.photo_url}
-        error={state.fieldErrors?.photo_url}
+        defaultValue={state.values?.photo ?? contact?.photo}
+        error={state.fieldErrors?.photo}
         onReadStatusChange={setPhotoIsProcessing}
       />
 

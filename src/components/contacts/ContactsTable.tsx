@@ -14,7 +14,7 @@ function listAvatarContact(contact: Contact) {
     first_name: contact.first_name,
     last_name: contact.last_name,
     email: contact.email,
-    photo_url: contact.photo_url?.startsWith("data:") ? null : contact.photo_url,
+    photo: null,
   };
 }
 

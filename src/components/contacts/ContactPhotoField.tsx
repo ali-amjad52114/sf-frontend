@@ -9,7 +9,7 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_LABEL = "JPG, PNG, or WebP up to 500 KB";
 
 /**
- * Converts a local image into the `photo_url` data URL expected by the API.
+ * Converts a local image into the `photo` data URI expected by the API.
  * The hidden input means a selected photo participates in the normal form POST,
  * including an edit submission where an existing photo was never changed.
  */
@@ -94,8 +94,8 @@ export default function ContactPhotoField({
       <div className="flex items-center gap-4">
         <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-muted-foreground">
           {photoUrl ? (
-            // Selected images are data URLs, while existing photos may be hosted
-            // anywhere, so next/image cannot safely optimize this preview.
+            // The API stores image data URIs, so next/image cannot optimize this
+            // client-side preview.
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photoUrl} alt="Selected contact photo" className="h-full w-full object-cover" />
           ) : (
@@ -135,7 +135,7 @@ export default function ContactPhotoField({
         </div>
       </div>
 
-      <input type="hidden" name="photo_url" value={photoUrl} />
+      <input type="hidden" name="photo" value={photoUrl} />
       {message ? (
         <p id={errorId} role="alert" className="text-[13px] text-destructive">
           {message}
